@@ -5,10 +5,12 @@ const { default: mongoose } = require('mongoose')
 const User=require('./models/User')
 const bcrypt=require('bcryptjs')
 const app=express()
-
+const jwt=require('jsonwebtoken')
 
 const salt=bcrypt.genSaltSync()
-app.use(cors())
+const secretKey='IAmPrakhar09$'
+
+app.use(cors({credentials:true,origin:'http://localhost:3000'}))      //we included extra info in this cors because if we are using credentials(see login page while fetching API) while fetching the API, we have to include more info like credentials to true and the host of our frontend(i.e., react)
 app.use(express.json())
 
 mongoose.connect('mongodb+srv://prakharsinha2k2:gvBmtUlmIINl5v6H@cluster0.lgrhctg.mongodb.net/?retryWrites=true&w=majority')
@@ -38,17 +40,17 @@ app.post('/login',async(req,res)=>{
     }
 
     const passCheck=bcrypt.compareSync(password,userInfo.password)          //.compareSync functn of bcypt will return false if pwd doesn't match
-    if(!passCheck){
+    if(passCheck){
+        jwt.sign({email, id:userInfo._id }, secretKey, {}, (err,token)=>{
+            if (err) throw err
+            
+            res.cookie('token',token).json('OK!')
+        })
+    }
+    
+    else{                              //means password isn't correct, so login will be failed!
         res.status(400).json({'err':"Invalid Password: Please Try Again!"})
     }
-
-    else{                              //means password is correct, that measn this is the stage, that user has logged in!
-
-    }
-
-
-    
-
 })
 
 app.listen(4000,()=>{console.log("Server Running On PORT NO: 4000")})

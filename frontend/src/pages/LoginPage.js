@@ -1,18 +1,33 @@
 import { useState,useEffect } from "react"
-
+import {Navigate} from 'react-router-dom'
+// import use
 export default function LoginPage(){
 
     const [email,setEmail]=useState("")
     const [password,setPassword]=useState("")
 
+    const[redirect,setRedirect]=useState(false)
+
     const handleLogin=async (e)=>{
         e.preventDefault()
 
-        const data=fetch('http://localhost:4000/login',{
+        const response=await fetch('http://localhost:4000/login',{
             method:'POST',
             body:JSON.stringify({email,password}),
-            headers:{'Content-Type':'application/json'}
+            headers:{'Content-Type':'application/json'},
+            credentials:"include"
         })
+
+        if(response.ok){
+            setRedirect(true)
+        }
+        else{
+            alert('Wrong Credentials!')
+        }
+    }
+
+    if(redirect){
+        return <Navigate to={'/'} />
     }
 
     return(
