@@ -1,5 +1,6 @@
-import { useState,useEffect } from "react"
+import { useState,useEffect, useContext } from "react"
 import {Navigate} from 'react-router-dom'
+import { UserContext } from "../utils/UserContext"
 // import use
 export default function LoginPage(){
 
@@ -7,6 +8,7 @@ export default function LoginPage(){
     const [password,setPassword]=useState("")
 
     const[redirect,setRedirect]=useState(false)
+    const {setUserInfo}=useContext(UserContext)
 
     const handleLogin=async (e)=>{
         e.preventDefault()
@@ -15,11 +17,14 @@ export default function LoginPage(){
             method:'POST',
             body:JSON.stringify({email,password}),
             headers:{'Content-Type':'application/json'},
-            credentials:"include"
+            credentials:"include"                           //you have to pass this credentials:include so that after subsequent login request, things go via generated token! 
         })
 
         if(response.ok){
-            setRedirect(true)
+            response.json().then(userData => {
+                setUserInfo(userData)
+                setRedirect(true)
+            })
         }
         else{
             alert('Wrong Credentials!')
