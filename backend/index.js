@@ -8,6 +8,11 @@ const app=express()
 const jwt=require('jsonwebtoken')
 const cookieParser=require('cookie-parser')
 
+//for file uploading, we have a multer package
+const multer=require('multer')
+const uploadMiddleware=multer({dest: 'uploads/'})
+const fs=require('fs')
+
 const salt=bcrypt.genSaltSync()
 const secretKey='IAmPrakhar09$'
 
@@ -70,6 +75,15 @@ app.get('/profile',(req,res)=>{
 
 app.post('/logout',(req,res)=>{             //logout is damn simple, we just have to make ensure cookie is reset or we simply provide empty string.
     res.cookie('token','').json('ok')
+})
+
+app.post('/post',uploadMiddleware.single('file'),(req,res)=>{             //file will be saved as a file name file, because we have written that, we can change it but remember, from front-end as well, you have to change that name!
+    const {originalname,path}=req.file
+    const parts=originalname.split('.')
+    const ext=parts[parts.length-1]   
+    const newPath=path+'.'+ext
+    fs.renameSync(path,newPath)
+    res.json({ext})    
 })
 
 app.listen(4000,()=>{console.log("Server Running On PORT NO: 4000")}) 
