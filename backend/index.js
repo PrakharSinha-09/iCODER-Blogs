@@ -13,12 +13,14 @@ const multer=require('multer')
 const uploadMiddleware=multer({dest: 'uploads/'})
 const fs=require('fs')
 
+const Post=require('./models/Post')
 const salt=bcrypt.genSaltSync()
 const secretKey='IAmPrakhar09$'
 
 app.use(cors({credentials:true,origin:'http://localhost:3000'}))      //we included extra info in this cors because if we are using credentials(see login page while fetching API) while fetching the API, we have to include more info like credentials to true and the host of our frontend(i.e., react)
 app.use(express.json())
 app.use(cookieParser())                                                //if you want to send the cookie that contains token to front-end, we have to use this cookie-parser middleware
+app.use('/uploads',express.static(__dirname+'/uploads'))
 
 mongoose.connect('mongodb+srv://prakharsinha2k2:gvBmtUlmIINl5v6H@cluster0.lgrhctg.mongodb.net/?retryWrites=true&w=majority')
 
@@ -77,13 +79,46 @@ app.post('/logout',(req,res)=>{             //logout is damn simple, we just hav
     res.cookie('token','').json('ok')
 })
 
-app.post('/post',uploadMiddleware.single('file'),(req,res)=>{             //file will be saved as a file name file, because we have written that, we can change it but remember, from front-end as well, you have to change that name!
+app.post('/post',uploadMiddleware.single('file'),async(req,res)=>{             //file will be saved as a file name file, because we have written that, we can change it but remember, from front-end as well, you have to change that name!
     const {originalname,path}=req.file
     const parts=originalname.split('.')
     const ext=parts[parts.length-1]   
     const newPath=path+'.'+ext
     fs.renameSync(path,newPath)
-    res.json({ext})    
+
+    const {token}=req.cookies
+    //need of verifying the token is that, we want the token that is required for the authorization not like something come up with any token and I'll give you the access of any such thing, we have to maintain the thing that whoever made the request, he sees only that relevant info.
+    jwt.verify(token,secretKey, {}, async(err,info)=>{
+        if(err) throw err;
+
+        const {title,summary,content}=req.body
+        const postDetail=await Post.create({
+            title:title,
+            summary:summary,
+            content:content,
+            cover:newPath,
+            author:info.id                
+        })
+        res.json({postDetail})    
+    })
+
+})
+
+app.get('/post',async(req,res)=>{
+    const posts=await Post.find()
+    .populate('author',['email','name'])          //this populate author will ensure that, author only see those posts, whic are posted by him, after that we have passed email in the array means that only authors email id is sent to front-end
+    .sort({createdAt: -1})
+    .limit(10)
+
+    res.json(posts)
+    // console.log(typeof (posts)); 
+    console.log(posts);
+})
+
+app.get('/post/:id',async(req,res)=>{
+    const {id}=req.params
+    const postDetail=await Post.findById(id).populate('author',['name'])
+    res.json(postDetail)
 })
 
 app.listen(4000,()=>{console.log("Server Running On PORT NO: 4000")}) 
